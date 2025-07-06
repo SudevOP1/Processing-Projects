@@ -19,16 +19,16 @@
 ## 🎬 Outputs
 
 ### ElasticCollisions
-![ElasticCollisions](https://raw.githubusercontent.com/SudevOP1/Processing-Projects/main/Outputs/ElasticCollisions.gif)<br>
+<img src="Outputs/ElasticCollisions.gif" title="ElasticCollisions" />
 
 ### Gravity
-![Gravity](https://raw.githubusercontent.com/SudevOP1/Processing-Projects/main/Outputs/Gravity.mp4)<br>
+<video src="Outputs/Gravity.mp4" title="Gravity" controls />
 
 ### JuliaSet
-![JuliaSet](https://raw.githubusercontent.com/SudevOP1/Processing-Projects/main/Outputs/JuliaSet.mp4)<br>
+<video src="Outputs/JuliaSet.mp4" title="JuliaSet" controls />
 
 ### Mandelbrot
-![Mandelbrot](https://raw.githubusercontent.com/SudevOP1/Processing-Projects/main/Outputs/Mandelbrot.png)<br>
+<img src="Outputs/Mandelbrot.gif" title="Mandelbrot" />
 
 ### TerrainGeneration
-![TerrainGeneration](https://raw.githubusercontent.com/SudevOP1/Processing-Projects/main/Outputs/TerrainGeneration.mp4)<br>
+<video src="Outputs/TerrainGeneration.mp4" title="TerrainGeneration" controls />
