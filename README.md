@@ -1,5 +1,4 @@
 # Processing-Projects
-<br>
 
 ## How to run processing projects using VSCode:
 
