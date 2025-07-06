@@ -1,5 +1,6 @@
 # Processing-Projects
 
+<br>
 ## How to run processing projects using VSCode:
 
 (Make sure you have the Processing IDE and Java installed)
@@ -15,6 +16,7 @@
 - Press `Ctrl + Shift + B`<br>
 → This will compile and run the `.pde` file using the task created earlier.
 
+<br>
 ## 🎬 Outputs
 
 ### ElasticCollisions
