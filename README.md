@@ -30,6 +30,9 @@
 ### Mandelbrot
 ![Mandelbrot](https://raw.githubusercontent.com/SudevOP1/Processing-Projects/main/Outputs/Mandelbrot.png)
 
-
 ### TerrainGeneration
 ![TerrainGeneration Output Video](https://raw.githubusercontent.com/SudevOP1/Processing-Projects/main/Outputs/TerrainGeneration.mp4)
+
+### Mandelbulb
+![Mandelbulb Output Video](https://raw.githubusercontent.com/SudevOP1/Processing-Projects/main/Outputs/Mandelbulb.gif)
+
