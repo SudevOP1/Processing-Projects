@@ -16,6 +16,7 @@
 
 - Press `Ctrl + Shift + B`
   - This will compile and run the `.pde` file using the task created earlier.
+- Press `Escape` to quit the program.
 
 <br>
 
