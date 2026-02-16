@@ -1,6 +1,6 @@
 import peasy.*;
 
-int DIM = 256;
+int gridSize = 128;
 int n = 8;
 int maxIterations = 10;
 
@@ -24,14 +24,14 @@ Spherical getSphericalCoords(float x, float y, float z) {
 }
 
 void calcMandelBulb() {
-    for(int i=0; i<DIM; i++) {
-        for (int j=0; j<DIM; j++) {
+    for(int i=0; i<gridSize; i++) {
+        for (int j=0; j<gridSize; j++) {
             boolean edge = false;
-            for(int k=0; k<DIM; k++) {
+            for(int k=0; k<gridSize; k++) {
 
-                float x = map(i, 0, DIM, -1, 1);
-                float y = map(j, 0, DIM, -1, 1);
-                float z = map(k, 0, DIM, -1, 1);
+                float x = map(i, 0, gridSize, -1, 1);
+                float y = map(j, 0, gridSize, -1, 1);
+                float z = map(k, 0, gridSize, -1, 1);
 
                 PVector zeta = new PVector(0, 0, 0);
                 int iteration = 0;
