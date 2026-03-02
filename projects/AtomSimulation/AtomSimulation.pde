@@ -80,13 +80,21 @@ class PolarPoint {
 }
 
 PeasyCam cam;
-PolarPoint[] polarPoints;
-int numPoints = 60000;
+PolarPoint[] electrons;
+int numElectrons = 40000;
 
-int n = 5;
-int l = 1;
+int n = 3;
+int l = 2;
 int m = 0;
 float a0 = 20.0; // bohr radius in pixels
+
+color bgColor          = #000000;
+color electronColor    = #00ffff;
+color axisColor        = #ffffff;
+color textColor        = #00ff00;
+
+int electronSize = 2;
+float maxR = n * n * a0 * 3; // max radius to consider
 
 int[] visibleOctants = {1, 2, 3, 4, 5, 6, 7, 8};
 
@@ -164,8 +172,7 @@ float radialProbability(float r, int n, int l) {
 }
 
 // sample r using rejection sampling
-float sampleR(int n, int l, int m) {
-    float maxR = n * n * a0 * 3; // maximum radius to consider
+float sampleR(int n, int l, int m, float maxR) {
     float maxProb = 0;
     
     // find maximum probability for rejection sampling
@@ -231,11 +238,11 @@ float lnGamma(float x) {
     return log(sqrt(TWO_PI / z) * pow(z / exp(1), z) / g);
 }
 
-PolarPoint[] generatePolarPoints(int numPoints, int n, int l, int m) {
+PolarPoint[] generatePolarPoints(int numPoints, int n, int l, int m, float maxR) {
     PolarPoint[] polarPoints = new PolarPoint[numPoints];
     
     for (int i = 0; i < numPoints; i++) {
-        float r     = sampleR(n, l, m);
+        float r     = sampleR(n, l, m, maxR);
         float theta = sampleTheta(n, l, m);
         float phi   = samplePhi(n, l, m);
         polarPoints[i] = new PolarPoint(r, theta, phi);
@@ -273,26 +280,32 @@ int lastDrawnPoints = 0;
 void setup() {
     fullScreen(P3D);
     cam = new PeasyCam(this, 500);
-    polarPoints = generatePolarPoints(numPoints, n, l, m);
+    electrons = generatePolarPoints(numElectrons, n, l, m, maxR);
     
     textSize(32);
     textAlign(RIGHT, TOP);
-    strokeWeight(1);
+    strokeWeight(electronSize);
 }
 
 void draw() {
-    background(0);
+    background(bgColor);
     
-    // drawing filtered polarPoints
-    stroke(255);
-    drawPolarPoints(polarPoints, visibleOctants);
+    // draw axes
+    stroke(axisColor);
+    line(maxR, 0, 0, -maxR, 0, 0);
+    line(0, maxR, 0, 0, -maxR, 0);
+    line(0, 0, maxR, 0, 0, -maxR);
+    
+    // drawing filtered electrons
+    stroke(electronColor);
+    drawPolarPoints(electrons, visibleOctants);
     
     // drawing textual info
     cam.beginHUD();
-    fill(0, 255, 0);
+    fill(textColor);
     text("FPS: " + int(frameRate), width - 20, 20);
     text("n=" + n + ", l=" + l + ", m=" + m, width - 20, 60);
-    text("numPoints=" + numPoints, width - 20, 100);
+    text("numElectrons=" + numElectrons, width - 20, 100);
     cam.endHUD();
 }
 
