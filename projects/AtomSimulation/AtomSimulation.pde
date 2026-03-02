@@ -34,6 +34,12 @@ class CartesianPoint {
         float phi   = atan(sqrt(this.x * this.x + this.y * this.y) / z);
         return new PolarPoint(r, theta, phi);
     }
+    
+    void add(CartesianPoint other) {
+        this.x += other.x;
+        this.y += other.y;
+        this.z += other.z;
+    }
 }
 
 class PolarPoint {
@@ -73,14 +79,51 @@ class PolarPoint {
         return false;
     }
     
+    void add(PolarPoint other) {
+        CartesianPoint resultCartesianPoint = this.toCartesian();
+        resultCartesianPoint.add(other.toCartesian());
+        PolarPoint resultPolarPoint = resultCartesianPoint.toPolar();
+        this.r = resultPolarPoint.r;
+        this.theta = resultPolarPoint.theta;
+        this.phi = resultPolarPoint.phi;
+    }
+    
+    void add(CartesianPoint other) {
+        CartesianPoint resultCartesianPoint = this.toCartesian();
+        resultCartesianPoint.add(other);
+        PolarPoint resultPolarPoint = resultCartesianPoint.toPolar();
+        this.r = resultPolarPoint.r;
+        this.theta = resultPolarPoint.theta;
+        this.phi = resultPolarPoint.phi;
+    }
+}
+
+class Electron {
+    PolarPoint pos;
+    CartesianPoint vel;
+
+    Electron(float r, float theta, float phi) {
+        this.pos = new PolarPoint(r, theta, phi);
+        this.vel = new CartesianPoint(0, 0, 0);
+    }
+
+    Electron(float r, float theta, float phi, float vx, float vy, float vz) {
+        this.pos = new PolarPoint(r, theta, phi);
+        this.vel = new CartesianPoint(vx, vy, vz);
+    }
+
+    void update() {
+        this.pos.add(this.vel);
+    }
+
     void draw() {
-        float[] cartesianCoords = this.toCartesianCoords();
+        float[] cartesianCoords = this.pos.toCartesianCoords();
         point(cartesianCoords[0], cartesianCoords[1], cartesianCoords[2]);
     }
 }
 
 PeasyCam cam;
-PolarPoint[] electrons;
+Electron[] electrons;
 int numElectrons = 40000;
 
 int n = 3;
@@ -238,49 +281,43 @@ float lnGamma(float x) {
     return log(sqrt(TWO_PI / z) * pow(z / exp(1), z) / g);
 }
 
-PolarPoint[] generatePolarPoints(int numPoints, int n, int l, int m, float maxR) {
-    PolarPoint[] polarPoints = new PolarPoint[numPoints];
+Electron[] generateElectrons(int numPoints, int n, int l, int m, float maxR) {
+    Electron[] electrons = new Electron[numPoints];
     
     for (int i = 0; i < numPoints; i++) {
         float r     = sampleR(n, l, m, maxR);
         float theta = sampleTheta(n, l, m);
         float phi   = samplePhi(n, l, m);
-        polarPoints[i] = new PolarPoint(r, theta, phi);
+        electrons[i] = new Electron(r, theta, phi);
     }
     
-    return polarPoints;
+    return electrons;
 }
 
-// draw points filtered by octants
-void drawPolarPoints(PolarPoint[] polarPoints, int[] octants) {
-    int drawnPoints = 0;
+// draw electrons filtered by octants
+void drawElectrons(Electron[] electrons, int[] octants) {
     
     // if octants array is empty, draw all points
     if (octants.length == 0) {
-        for (PolarPoint pp : polarPoints) {
-            if (pp != null) {
-                pp.draw();
-                drawnPoints++;
+        for (Electron e : electrons) {
+            if (e != null) {
+                e.draw();
             }
         }
     } else {
-        // draw only points in specified octants
-        for (PolarPoint pp : polarPoints) {
-            if (pp != null && pp.isInOctants(octants)) {
-                pp.draw();
-                drawnPoints++;
+        // draw points in only specified octants
+        for (Electron e : electrons) {
+            if (e != null && e.pos.isInOctants(octants)) {
+                e.draw();
             }
         }
     }
-    lastDrawnPoints = drawnPoints;
 }
-
-int lastDrawnPoints = 0;
 
 void setup() {
     fullScreen(P3D);
     cam = new PeasyCam(this, 500);
-    electrons = generatePolarPoints(numElectrons, n, l, m, maxR);
+    electrons = generateElectrons(numElectrons, n, l, m, maxR);
     
     textSize(32);
     textAlign(RIGHT, TOP);
@@ -298,7 +335,7 @@ void draw() {
     
     // drawing filtered electrons
     stroke(electronColor);
-    drawPolarPoints(electrons, visibleOctants);
+    drawElectrons(electrons, visibleOctants);
     
     // drawing textual info
     cam.beginHUD();
