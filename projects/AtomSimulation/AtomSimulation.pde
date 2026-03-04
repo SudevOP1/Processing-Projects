@@ -149,31 +149,46 @@ class Electron {
     }
 }
 
+class ColorStop {
+    float position;   // 0.0 → 1.0
+    color col;
+
+    ColorStop(float position, color col) {
+        this.position = position;
+        this.col = col;
+    }
+}
+
 PeasyCam cam;
 Electron[] electrons;
 
 // variables
 int numElectrons = 40000;
 int n = 6;
-int l = 1;
+int l = 3;
 int m = 1;
-float speedScale = 100.0;
+float speedScale = 10.0;
+float minSpeedElectronSize = 2;
+float maxSpeedElectronSize = 3;
 String avgRFilepath = "tests/avgR.csv";
+int[] visibleOctants = {1, 2, 3, 4, 5, 6, 7, 8};
 
 // sci constants
 float a0 = 20.0; // bohr radius in pixels
 float hBar = 50.0; // h/(2*PI)
 float electronMass = 1.0;
-
-color bgColor          = #000000;
-color electronColor    = #00ffff;
-color axisColor        = #ffffff;
-color textColor        = #00ff00;
-
-int electronSize = 2;
 float maxR = n * n * a0 * 3; // max radius to consider
 
-int[] visibleOctants = {1, 2, 3, 4, 5, 6, 7, 8};
+color bgColor   = #000000;
+color axisColor = #ffffff;
+color textColor = #00ff00;
+ColorStop[] velocityGradient = {
+    new ColorStop(0.0, #000000),
+    new ColorStop(0.2, #8000ff),
+    new ColorStop(0.5, #ff0000),
+    new ColorStop(0.8, #ffff00),
+    new ColorStop(1.0, #ffffff),
+};
 
 // calculate Laguerre polynomial
 float laguerreL(int n, int alpha, float x) {
@@ -315,6 +330,19 @@ float lnGamma(float x) {
     return log(sqrt(TWO_PI / z) * pow(z / exp(1), z) / g);
 }
 
+color getGradientColor(float t, ColorStop[] velocityGradient) {
+    t = constrain(t, 0, 1);
+    for (int i = 0; i < velocityGradient.length - 1; i++) {
+        ColorStop a = velocityGradient[i];
+        ColorStop b = velocityGradient[i + 1];
+        if (t >= a.position && t <= b.position) {
+            float localT = map(t, a.position, b.position, 0, 1);
+            return lerpColor(a.col, b.col, localT);
+        }
+    }
+    return velocityGradient[velocityGradient.length - 1].col;
+}
+
 CartesianPoint calcProbabilityFlow(Electron electron, int n, int l, int m) {
     float r = electron.pos.r;
     float theta = electron.pos.theta;
@@ -358,22 +386,42 @@ Electron[] generateElectrons(int numPoints, int n, int l, int m, float maxR) {
 }
 
 // draw electrons filtered by octants
-void drawElectrons(Electron[] electrons, int[] octants) {
+void drawElectrons(Electron[] electrons, int[] octants, ColorStop[] velocityGradient) {
+
+    float maxObservedSpeed = 0;
+    for (Electron electron : electrons) {
+        float speed = sqrt(
+            electron.vel.x * electron.vel.x +
+            electron.vel.y * electron.vel.y +
+            electron.vel.z * electron.vel.z
+        );
+        if (speed > maxObservedSpeed) {
+            maxObservedSpeed = speed;
+        }
+    }
     
-    // if octants array is empty, draw all points
-    if (octants.length == 0) {
-        for (Electron electron : electrons) {
-            if (electron != null) {
-                electron.draw();
-            }
+    for (Electron electron : electrons) {
+        if (electron == null || (octants.length != 0 && !electron.pos.isInOctants(octants))) {
+            continue;
         }
-    } else {
-        // draw points in only specified octants
-        for (Electron electron : electrons) {
-            if (electron != null && electron.pos.isInOctants(octants)) {
-                electron.draw();
-            }
+
+        // compute velocity magnitude
+        float speed = sqrt(
+            electron.vel.x * electron.vel.x +
+            electron.vel.y * electron.vel.y +
+            electron.vel.z * electron.vel.z
+        );
+
+        // normalize speed
+        float t = 0;
+        if (maxObservedSpeed > 0) {
+            t = speed / maxObservedSpeed;
         }
+
+        // interpolate between low and high velocity color
+        stroke(getGradientColor(t, velocityGradient));
+        strokeWeight(lerp(minSpeedElectronSize, maxSpeedElectronSize, t));
+        electron.draw();
     }
 }
 
@@ -384,7 +432,6 @@ void setup() {
     
     textSize(32);
     textAlign(RIGHT, TOP);
-    strokeWeight(electronSize);
 
     // initialize CSV log
     PrintWriter pw;
@@ -413,8 +460,7 @@ void draw() {
     }
 
     // drawing filtered electrons
-    stroke(electronColor);
-    drawElectrons(electrons, visibleOctants);
+    drawElectrons(electrons, visibleOctants, velocityGradient);
     
     // drawing textual info
     cam.beginHUD();
@@ -424,8 +470,8 @@ void draw() {
     text("numElectrons=" + numElectrons, width - 20, 100);
     cam.endHUD();
 
-    // debugging
-    logAvgR();
+    // // debugging
+    // logAvgR();
 }
 
 // keyboard controls for octants toggling
