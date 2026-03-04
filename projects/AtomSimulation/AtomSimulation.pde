@@ -1,4 +1,7 @@
 import peasy.*;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.IOException;
 
 class CartesianPoint {
     float x, y, z;
@@ -7,6 +10,18 @@ class CartesianPoint {
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+    
+    void set(float x, float y, float z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+    
+    void set(CartesianPoint other) {
+        this.x = other.x;
+        this.y = other.y;
+        this.z = other.z;
     }
     
     // get the octant number (1-8) for this point
@@ -30,8 +45,8 @@ class CartesianPoint {
     
     PolarPoint toPolar() {
         float r     = sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-        float theta = atan(this.y / this.x);
-        float phi   = atan(sqrt(this.x * this.x + this.y * this.y) / z);
+        float theta = atan2(this.y, this.x);
+        float phi   = (r == 0) ? 0 : acos(this.z / r);
         return new PolarPoint(r, theta, phi);
     }
     
@@ -49,6 +64,18 @@ class PolarPoint {
         this.r = r;
         this.theta = theta;
         this.phi = phi;
+    }
+    
+    void set(float r, float theta, float phi) {
+        this.r = r;
+        this.theta = theta;
+        this.phi = phi;
+    }
+    
+    void set(PolarPoint other) {
+        this.r = other.r;
+        this.theta = other.theta;
+        this.phi = other.phi;
     }
     
     CartesianPoint toCartesian() {
@@ -101,21 +128,21 @@ class PolarPoint {
 class Electron {
     PolarPoint pos;
     CartesianPoint vel;
-
+    
     Electron(float r, float theta, float phi) {
         this.pos = new PolarPoint(r, theta, phi);
         this.vel = new CartesianPoint(0, 0, 0);
     }
-
+    
     Electron(float r, float theta, float phi, float vx, float vy, float vz) {
         this.pos = new PolarPoint(r, theta, phi);
         this.vel = new CartesianPoint(vx, vy, vz);
     }
-
+    
     void update() {
         this.pos.add(this.vel);
     }
-
+    
     void draw() {
         float[] cartesianCoords = this.pos.toCartesianCoords();
         point(cartesianCoords[0], cartesianCoords[1], cartesianCoords[2]);
@@ -126,10 +153,13 @@ PeasyCam cam;
 Electron[] electrons;
 int numElectrons = 40000;
 
-int n = 3;
-int l = 2;
-int m = 0;
+int n = 6;
+int l = 1;
+int m = 1;
 float a0 = 20.0; // bohr radius in pixels
+float speedScale = 20.0;
+float hBar = 50.0;
+float electronMass = 1.0;
 
 color bgColor          = #000000;
 color electronColor    = #00ffff;
@@ -281,6 +311,27 @@ float lnGamma(float x) {
     return log(sqrt(TWO_PI / z) * pow(z / exp(1), z) / g);
 }
 
+CartesianPoint calcProbabilityFlow(Electron electron, int n, int l, int m) {
+    float r = electron.pos.r;
+    float theta = electron.pos.theta;
+    float phi = electron.pos.phi;
+    if (r < 0.000001) {
+        return new CartesianPoint(0, 0, 0);
+    }
+    
+    // compute mag
+    float sinPhi = sin(phi);
+    sinPhi = max(abs(sinPhi), 0.001);
+    float velMag = speedScale * hBar * m / (electronMass * r * sinPhi);
+    
+    // convert to cartesian
+    float vx = -velMag * sin(theta);
+    float vy = velMag * cos(theta);
+    float vz = 0;
+    
+    return new CartesianPoint(vx, vy, vz);
+}
+
 Electron[] generateElectrons(int numPoints, int n, int l, int m, float maxR) {
     Electron[] electrons = new Electron[numPoints];
     
@@ -299,16 +350,16 @@ void drawElectrons(Electron[] electrons, int[] octants) {
     
     // if octants array is empty, draw all points
     if (octants.length == 0) {
-        for (Electron e : electrons) {
-            if (e != null) {
-                e.draw();
+        for (Electron electron : electrons) {
+            if (electron != null) {
+                electron.draw();
             }
         }
     } else {
         // draw points in only specified octants
-        for (Electron e : electrons) {
-            if (e != null && e.pos.isInOctants(octants)) {
-                e.draw();
+        for (Electron electron : electrons) {
+            if (electron != null && electron.pos.isInOctants(octants)) {
+                electron.draw();
             }
         }
     }
@@ -333,6 +384,12 @@ void draw() {
     line(0, maxR, 0, 0, -maxR, 0);
     line(0, 0, maxR, 0, 0, -maxR);
     
+    // updating electrons
+    for (Electron electron : electrons) {
+        electron.vel.set(calcProbabilityFlow(electron, n, l, m));
+        electron.update();
+    }
+
     // drawing filtered electrons
     stroke(electronColor);
     drawElectrons(electrons, visibleOctants);
