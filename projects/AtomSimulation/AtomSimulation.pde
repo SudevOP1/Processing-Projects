@@ -151,14 +151,18 @@ class Electron {
 
 PeasyCam cam;
 Electron[] electrons;
-int numElectrons = 40000;
 
+// variables
+int numElectrons = 40000;
 int n = 6;
 int l = 1;
 int m = 1;
+float speedScale = 100.0;
+String avgRFilepath = "tests/avgR.csv";
+
+// sci constants
 float a0 = 20.0; // bohr radius in pixels
-float speedScale = 20.0;
-float hBar = 50.0;
+float hBar = 50.0; // h/(2*PI)
 float electronMass = 1.0;
 
 color bgColor          = #000000;
@@ -322,14 +326,22 @@ CartesianPoint calcProbabilityFlow(Electron electron, int n, int l, int m) {
     // compute mag
     float sinPhi = sin(phi);
     sinPhi = max(abs(sinPhi), 0.001);
-    float velMag = speedScale * hBar * m / (electronMass * r * sinPhi);
     
-    // convert to cartesian
-    float vx = -velMag * sin(theta);
-    float vy = velMag * cos(theta);
-    float vz = 0;
+    // angular velocity in radians per frame
+    float dTheta = speedScale * hBar * m / (electronMass * r * r * sinPhi * sinPhi);
+    dTheta = constrain(dTheta, -0.05, 0.05);
     
-    return new CartesianPoint(vx, vy, vz);
+    // compute new position after rotating theta by dTheta
+    float newTheta = theta + dTheta;
+    float newX = r * sin(phi) * cos(newTheta);
+    float newY = r * sin(phi) * sin(newTheta);
+    float newZ = r * cos(phi);
+    
+    // return the delta as a cartesian velocity
+    float oldX = r * sin(phi) * cos(theta);
+    float oldY = r * sin(phi) * sin(theta);
+    
+    return new CartesianPoint(newX - oldX, newY - oldY, newZ - r * cos(phi));
 }
 
 Electron[] generateElectrons(int numPoints, int n, int l, int m, float maxR) {
@@ -373,6 +385,16 @@ void setup() {
     textSize(32);
     textAlign(RIGHT, TOP);
     strokeWeight(electronSize);
+
+    // initialize CSV log
+    PrintWriter pw;
+    try {
+        pw = new PrintWriter(new FileWriter(sketchPath(avgRFilepath), false));
+        pw.println("millis,avgR");
+        pw.close();
+    } catch (IOException e) {
+        println("Could not create avgR.csv: " + e.getMessage());
+    }
 }
 
 void draw() {
@@ -401,6 +423,9 @@ void draw() {
     text("n=" + n + ", l=" + l + ", m=" + m, width - 20, 60);
     text("numElectrons=" + numElectrons, width - 20, 100);
     cam.endHUD();
+
+    // debugging
+    logAvgR();
 }
 
 // keyboard controls for octants toggling
@@ -444,5 +469,22 @@ void toggleOctant(int octant) {
         }
         newOctants[visibleOctants.length] = octant;
         visibleOctants = newOctants;
+    }
+}
+
+// DEBUGGING
+void logAvgR() {
+    float rSum = 0;
+    for (Electron electron : electrons) {
+        rSum += electron.pos.r;
+    }
+    float avgR = rSum / electrons.length;
+
+    try {
+        PrintWriter pw = new PrintWriter(new FileWriter(sketchPath(avgRFilepath), true));
+        pw.println(millis() + "," + avgR);
+        pw.close();
+    } catch (IOException e) {
+        println("Could not write to avgR.csv: " + e.getMessage());
     }
 }
