@@ -179,6 +179,7 @@ float hBar = 50.0; // h/(2*PI)
 float electronMass = 1.0;
 float maxR = n * n * a0 * 3; // max radius to consider
 
+// colors
 color bgColor   = #000000;
 color axisColor = #ffffff;
 color textColor = #00ff00;
